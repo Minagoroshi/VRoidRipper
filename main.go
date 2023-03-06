@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"net/http"
 	"os"
 	"regexp"
 )
@@ -28,8 +29,14 @@ func main() {
 		if entry.Text != "" || regex.MatchString(entry.Text) {
 			item := regex.ReplaceAllString(entry.Text, "")
 			fmt.Println("Downloading...")
-			resp := requests.Get("https://hub.vroid.com/api/character_models/" + item + "/optimized_preview")
-			err := os.WriteFile(item+".vrm", resp.Body(), 0755)
+			headers := map[string]string{
+				"X-Api-Version": "20211020",
+			}
+			resp, err := requests.GetWithHeaders("https://hub.vroid.com/api/character_models/"+item+"/optimized_preview", headers)
+			if err != nil {
+				fmt.Println(err)
+			}
+			err = os.WriteFile(item+".vrm", resp.Body(), 0755)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -39,9 +46,12 @@ func main() {
 		}
 	})
 
-	content := widget.NewCard("VRoid Ripper", "by Top", container.NewVBox(entry, button))
+	content := container.NewVBox(
+		widget.NewLabel("Enter VRoid character model URL:"),
+		entry,
+		button,
+	)
 
-	mainWindow.SetContent(container.NewVBox(content))
+	mainWindow.SetContent(content)
 	mainWindow.ShowAndRun()
-
 }
